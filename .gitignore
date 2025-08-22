@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+*.log
+kanban_boards/*.png
+.pytest_cache/
+htmlcov/
