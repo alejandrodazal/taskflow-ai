@@ -1,2 +1,0 @@
-[console_scripts]
-taskflow = taskflow.cli.main:cli

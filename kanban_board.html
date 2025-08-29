@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow Kanban Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #0052cc, #0747a6);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #0052cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            background-color: #0747a6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-secondary {
+            background-color: #42526e;
+        }
+
+        .btn-secondary:hover {
+            background-color: #344563;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            border-right: 1px solid #e1e4e8;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+        }
+
+        .sidebar-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #172b4d;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background-color: #f4f5f7;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #0052cc;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #5e6c84;
+        }
+
+        .kanban-container {
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+        }
+
+        .board-container {
+            display: flex;
+            gap: 20px;
+            min-height: 100%;
+        }
+
+        .column {
+            background-color: #ebecf0;
+            border-radius: 8px;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .column-header {
+            padding: 15px;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+        }
+
+        .pending .column-header {
+            background-color: #42526e;
+            color: white;
+        }
+
+        .inprogress .column-header {
+            background-color: #0052cc;
+            color: white;
+        }
+
+        .completed .column-header {
+            background-color: #008000;
+            color: white;
+        }
+
+        .tasks-container {
+            padding: 10px;
+            flex: 1;
+            min-height: 500px;
+            overflow-y: auto;
+        }
+
+        .task-card {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #dfe1e6;
+        }
+
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .task-card:active {
+            cursor: grabbing;
+        }
+
+        .task-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: #172b4d;
+        }
+
+        .task-card p {
+            font-size: 0.9rem;
+            color: #5e6c84;
+            margin: 5px 0;
+        }
+
+        .task-card .priority-high {
+            border-left-color: #de350b;
+        }
+
+        .task-card .priority-medium {
+            border-left-color: #ff991f;
+        }
+
+        .task-card .priority-low {
+            border-left-color: #008000;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #5e6c84;
+            font-style: italic;
+        }
+
+        .drag-over {
+            background-color: #dfe3e6;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e1e4e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #172b4d;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #5e6c84;
+        }
+
+        .close-btn:hover {
+            color: #172b4d;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #172b4d;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #dfe1e6;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #0052cc;
+            box-shadow: 0 0 0 2px #4c9aff;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e1e4e8;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 2000;
+            transform: translateX(120%);
+            transition: transform 0.3s ease-out;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background-color: #008000;
+        }
+
+        .notification.error {
+            background-color: #de350b;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .board-container {
+                flex-direction: column;
+            }
+            
+            .column {
+                min-width: 100%;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+                <header>
+            <div class="header-title">TaskFlow Kanban Board</div>
+            <div class="header-actions">
+                <select id="project-filter" class="btn btn-secondary">
+                    <option value="">Todos los proyectos</option>
+                </select>
+                <select id="assignee-filter" class="btn btn-secondary">
+                    <option value="">Todos los responsables</option>
+                </select>
+                <button id="add-task-btn" class="btn">+ Nueva Tarea</button>
+                <button id="refresh-btn" class="btn btn-secondary">↻ Actualizar</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Estadísticas</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-tasks">0</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="pending-tasks">0</div>
+                            <div class="stat-label">Pendientes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="inprogress-tasks">0</div>
+                            <div class="stat-label">En Progreso</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="completed-tasks">0</div>
+                            <div class="stat-label">Completadas</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Proyectos</h3>
+                    <div id="projects-list">
+                        <p class="empty-state">Cargando proyectos...</p>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3 class="sidebar-title">Responsables</h3>
+                    <div id="assignees-list">
+                        <p class="empty-state">Cargando responsables...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="kanban-container">
+                <div class="board-container" id="board-container">
+                    <div class="column pending">
+                        <div class="column-header">Pendientes</div>
+                        <div class="tasks-container" data-status="pending">
+                            <div class="empty-state">No hay tareas pendientes</div>
+                        </div>
+                    </div>
+                    
+                    <div class="column inprogress">
+                        <div class="column-header">En Progreso</div>
+                        <div class="tasks-container" data-status="inprogress">
+                            <div class="empty-state">No hay tareas en progreso</div>
+                        </div>
+                    </div>
+                    
+                    <div class="column completed">
+                        <div class="column-header">Completadas</div>
+                        <div class="tasks-container" data-status="completed">
+                            <div class="empty-state">No hay tareas completadas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para agregar/editar tarea -->
+    <div id="task-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">Nueva Tarea</div>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="task-id">
+                <div class="form-group">
+                    <label for="task-title">Título:</label>
+                    <input type="text" id="task-title" placeholder="¿Qué necesitas hacer?">
+                </div>
+                <div class="form-group">
+                    <label for="task-description">Descripción:</label>
+                    <textarea id="task-description" placeholder="Detalles adicionales..." rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="task-project">Proyecto:</label>
+                    <input type="text" id="task-project" placeholder="Nombre del proyecto">
+                </div>
+                <div class="form-group">
+                    <label for="task-assignee">Asignado a:</label>
+                    <input type="text" id="task-assignee" placeholder="Nombre del responsable">
+                </div>
+                <div class="form-group">
+                    <label for="task-priority">Prioridad:</label>
+                    <select id="task-priority">
+                        <option value="low">Baja</option>
+                        <option value="medium" selected>Media</option>
+                        <option value="high">Alta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-status">Estado:</label>
+                    <select id="task-status">
+                        <option value="pending">Pendiente</option>
+                        <option value="inprogress">En Progreso</option>
+                        <option value="completed">Completada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-btn">Cancelar</button>
+                <button class="btn" id="save-btn">Guardar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notificaciones -->
+    <div id="notification" class="notification"></div>
+    
+    <script>
+        // Variables globales
+        let tasks = [];
+        let projects = [];
+        let assignees = [];
+        let draggedTask = null;
+        let currentProjectFilter = '';
+        let currentAssigneeFilter = '';
+
+        // Elementos del DOM
+        const boardContainer = document.getElementById('board-container');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const projectFilter = document.getElementById('project-filter');
+        const assigneeFilter = document.getElementById('assignee-filter');
+        const taskModal = document.getElementById('task-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const notification = document.getElementById('notification');
+
+        // Elementos del formulario
+        const taskIdInput = document.getElementById('task-id');
+        const taskTitleInput = document.getElementById('task-title');
+        const taskDescriptionInput = document.getElementById('task-description');
+        const taskProjectInput = document.getElementById('task-project');
+        const taskAssigneeInput = document.getElementById('task-assignee');
+        const taskPrioritySelect = document.getElementById('task-priority');
+        const taskStatusSelect = document.getElementById('task-status');
+        const closeBtn = document.querySelector('.close-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const saveBtn = document.getElementById('save-btn');
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllData();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            // Botones de acción
+            addTaskBtn.addEventListener('click', openNewTaskModal);
+            refreshBtn.addEventListener('click', loadAllData);
+            projectFilter.addEventListener('change', handleProjectFilterChange);
+            assigneeFilter.addEventListener('change', handleAssigneeFilterChange);
+            
+            // Modal
+            closeBtn.addEventListener('click', closeTaskModal);
+            cancelBtn.addEventListener('click', closeTaskModal);
+            saveBtn.addEventListener('click', saveTask);
+            
+            // Drag and drop
+            setupDragAndDrop();
+        }
+
+        function handleProjectFilterChange() {
+            currentProjectFilter = projectFilter.value;
+            loadTasks();
+        }
+
+        function handleAssigneeFilterChange() {
+            currentAssigneeFilter = assigneeFilter.value;
+            loadTasks();
+        }
+
+        // Funciones de carga de datos
+        async function loadAllData() {
+            try {
+                await Promise.all([
+                    loadTasks(),
+                    loadProjects(),
+                    loadAssignees()
+                ]);
+                updateStats();
+            } catch (error) {
+                console.error('Error al cargar los datos:', error);
+                showNotification(`Error al cargar los datos: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                // Construir URL con parámetros de filtro
+                let url = '/api/tasks';
+                const params = [];
+                
+                if (currentProjectFilter) {
+                    params.push(`project=${encodeURIComponent(currentProjectFilter)}`);
+                }
+                
+                if (currentAssigneeFilter) {
+                    params.push(`assignee=${encodeURIComponent(currentAssigneeFilter)}`);
+                }
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                
+                console.log(`Cargando tareas con URL: ${url}`); // Para debugging
+                
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+                
+                tasks = await response.json();
+                console.log(`Tareas cargadas:`, tasks); // Para debugging
+                renderBoard();
+            } catch (error) {
+                console.error('Error al cargar las tareas:', error);
+                showNotification(`Error al cargar las tareas: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+                
+                projects = await response.json();
+                renderProjects();
+            } catch (error) {
+                console.error('Error al cargar los proyectos:', error);
+                showNotification(`Error al cargar los proyectos: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadAssignees() {
+            try {
+                const response = await fetch('/api/assignees');
+                
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+                
+                assignees = await response.json();
+                renderAssignees();
+            } catch (error) {
+                console.error('Error al cargar los responsables:', error);
+                showNotification(`Error al cargar los responsables: ${error.message}`, 'error');
+            }
+        }
+
+        // Funciones de renderizado
+        function renderBoard() {
+            // Limpiar contenedores de tareas
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                container.innerHTML = '';
+            });
+            
+            // Agrupar tareas por estado
+            const pendingTasks = tasks.filter(task => task.status === 'pending');
+            const inProgressTasks = tasks.filter(task => task.status === 'inprogress');
+            const completedTasks = tasks.filter(task => task.status === 'completed');
+            
+            // Renderizar tareas en cada columna
+            renderTasksInColumn('pending', pendingTasks);
+            renderTasksInColumn('inprogress', inProgressTasks);
+            renderTasksInColumn('completed', completedTasks);
+            
+            // Actualizar estado vacío
+            updateEmptyStates();
+        }
+
+        function renderTasksInColumn(status, tasks) {
+            const container = document.querySelector(`.tasks-container[data-status="${status}"]`);
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state">No hay tareas</div>';
+                return;
+            }
+            
+            tasks.forEach(task => {
+                const taskCard = createTaskCard(task);
+                container.appendChild(taskCard);
+            });
+        }
+
+        function createTaskCard(task) {
+            const taskCard = document.createElement('div');
+            taskCard.className = `task-card priority-${task.priority}`;
+            taskCard.draggable = true;
+            taskCard.dataset.id = task.id;
+            taskCard.dataset.status = task.status;
+            
+            taskCard.innerHTML = `
+                <h3>${task.title}</h3>
+                ${task.description ? `<p>${task.description}</p>` : ''}
+                ${task.project_name ? `<p><strong>Proyecto:</strong> ${task.project_name}</p>` : ''}
+                ${task.assignee_name ? `<p><strong>Asignado a:</strong> ${task.assignee_name}</p>` : ''}
+                <p><strong>Prioridad:</strong> ${getPriorityText(task.priority)}</p>
+            `;
+            
+            // Event listeners para drag and drop
+            taskCard.addEventListener('dragstart', handleDragStart);
+            taskCard.addEventListener('dragend', handleDragEnd);
+            
+            // Event listener para edición
+            taskCard.addEventListener('dblclick', () => openEditTaskModal(task));
+            
+            return taskCard;
+        }
+
+        function updateEmptyStates() {
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                if (container.children.length === 0 || container.querySelector('.empty-state')) {
+                    const status = container.dataset.status;
+                    const taskCount = tasks.filter(task => task.status === status).length;
+                    
+                    if (taskCount === 0 && !container.querySelector('.empty-state')) {
+                        container.innerHTML = '<div class="empty-state">No hay tareas</div>';
+                    }
+                }
+            });
+        }
+
+        function renderProjects() {
+            const projectsList = document.getElementById('projects-list');
+            
+            if (projects.length === 0) {
+                projectsList.innerHTML = '<p class="empty-state">No hay proyectos</p>';
+                
+                // Limpiar combo de filtro
+                projectFilter.innerHTML = '<option value="">Todos los proyectos</option>';
+                return;
+            }
+            
+            // Renderizar lista de proyectos
+            let html = '<ul>';
+            projects.forEach(project => {
+                // Contar tareas del proyecto
+                const taskCount = tasks.filter(task => task.project_id == project.id).length;
+                html += `<li><strong>${project.name}</strong> (${taskCount} tareas)</li>`;
+            });
+            html += '</ul>';
+            
+            projectsList.innerHTML = html;
+            
+            // Actualizar combo de filtro manteniendo el valor seleccionado
+            const currentFilter = projectFilter.value;
+            let filterHtml = '<option value="">Todos los proyectos</option>';
+            projects.forEach(project => {
+                const selected = project.name === currentFilter ? 'selected' : '';
+                filterHtml += `<option value="${project.name}" ${selected}>${project.name}</option>`;
+            });
+            
+            projectFilter.innerHTML = filterHtml;
+        }
+
+        function renderAssignees() {
+            const assigneesList = document.getElementById('assignees-list');
+            
+            if (assignees.length === 0) {
+                assigneesList.innerHTML = '<p class="empty-state">No hay responsables</p>';
+                
+                // Limpiar combo de filtro
+                assigneeFilter.innerHTML = '<option value="">Todos los responsables</option>';
+                return;
+            }
+            
+            // Renderizar lista de responsables
+            let html = '<ul>';
+            assignees.forEach(assignee => {
+                // Contar tareas del responsable
+                const taskCount = tasks.filter(task => task.assignee_id == assignee.id).length;
+                html += `<li><strong>${assignee.name}</strong> (${taskCount} tareas)</li>`;
+            });
+            html += '</ul>';
+            
+            assigneesList.innerHTML = html;
+            
+            // Actualizar combo de filtro manteniendo el valor seleccionado
+            const currentFilter = assigneeFilter.value;
+            let filterHtml = '<option value="">Todos los responsables</option>';
+            assignees.forEach(assignee => {
+                const selected = assignee.name === currentFilter ? 'selected' : '';
+                filterHtml += `<option value="${assignee.name}" ${selected}>${assignee.name}</option>`;
+            });
+            
+            assigneeFilter.innerHTML = filterHtml;
+        }
+
+        function updateStats() {
+            // Actualizar estadísticas
+            document.getElementById('total-tasks').textContent = tasks.length;
+            document.getElementById('pending-tasks').textContent = tasks.filter(t => t.status === 'pending').length;
+            document.getElementById('inprogress-tasks').textContent = tasks.filter(t => t.status === 'inprogress').length;
+            document.getElementById('completed-tasks').textContent = tasks.filter(t => t.status === 'completed').length;
+        }
+
+        // Funciones de drag and drop
+        function setupDragAndDrop() {
+            const taskContainers = document.querySelectorAll('.tasks-container');
+            
+            taskContainers.forEach(container => {
+                container.addEventListener('dragover', handleDragOver);
+                container.addEventListener('dragenter', handleDragEnter);
+                container.addEventListener('dragleave', handleDragLeave);
+                container.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragStart(e) {
+            draggedTask = this;
+            this.style.opacity = '0.4';
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            document.querySelectorAll('.tasks-container').forEach(container => {
+                container.classList.remove('drag-over');
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        async function handleDrop(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+            
+            if (draggedTask) {
+                const newStatus = this.dataset.status;
+                const taskId = draggedTask.dataset.id;
+                
+                // Mover la tarjeta visualmente
+                this.appendChild(draggedTask);
+                
+                // Actualizar el estado en el backend
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}/status`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error al actualizar la tarea: ${response.status}`);
+                    }
+                    
+                    const updatedTask = await response.json();
+                    
+                    // Actualizar datos locales
+                    const taskIndex = tasks.findIndex(task => task.id == taskId);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex] = updatedTask;
+                        draggedTask.dataset.status = newStatus;
+                    }
+                    
+                    updateStats();
+                    showNotification('Tarea movida correctamente', 'success');
+                } catch (error) {
+                    console.error('Error al actualizar la tarea:', error);
+                    showNotification(`Error al mover la tarea: ${error.message}`, 'error');
+                    // Revertir el movimiento visual
+                    loadTasks(); // Recargar todo para asegurar consistencia
+                }
+                
+                draggedTask = null;
+            }
+        }
+
+        // Funciones del modal
+        function openNewTaskModal() {
+            // Limpiar formulario
+            taskIdInput.value = '';
+            taskTitleInput.value = '';
+            taskDescriptionInput.value = '';
+            taskProjectInput.value = '';
+            taskAssigneeInput.value = '';
+            taskPrioritySelect.value = 'medium';
+            taskStatusSelect.value = 'pending';
+            
+            modalTitle.textContent = 'Nueva Tarea';
+            taskModal.classList.remove('hidden');
+            taskTitleInput.focus();
+        }
+
+        function openEditTaskModal(task) {
+            // Rellenar formulario con datos de la tarea
+            taskIdInput.value = task.id;
+            taskTitleInput.value = task.title || '';
+            taskDescriptionInput.value = task.description || '';
+            taskProjectInput.value = task.project_name || '';
+            taskAssigneeInput.value = task.assignee_name || '';
+            taskPrioritySelect.value = task.priority || 'medium';
+            taskStatusSelect.value = task.status || 'pending';
+            
+            modalTitle.textContent = 'Editar Tarea';
+            taskModal.classList.remove('hidden');
+            taskTitleInput.focus();
+        }
+
+        function closeTaskModal() {
+            taskModal.classList.add('hidden');
+        }
+
+        async function saveTask() {
+            const taskId = taskIdInput.value;
+            const taskData = {
+                title: taskTitleInput.value,
+                description: taskDescriptionInput.value,
+                project_name: taskProjectInput.value,
+                assignee_name: taskAssigneeInput.value,
+                priority: taskPrioritySelect.value,
+                status: taskStatusSelect.value
+            };
+            
+            // Validar datos
+            if (!taskData.title.trim()) {
+                showNotification('El título es requerido', 'error');
+                return;
+            }
+            
+            try {
+                let response;
+                
+                if (taskId) {
+                    // Actualizar tarea existente
+                    response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                } else {
+                    // Crear nueva tarea
+                    response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(taskData)
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`Error al guardar la tarea: ${response.status}`);
+                }
+                
+                const savedTask = await response.json();
+                
+                // Actualizar datos locales
+                if (taskId) {
+                    const taskIndex = tasks.findIndex(task => task.id == taskId);
+                    if (taskIndex !== -1) {
+                        tasks[taskIndex] = savedTask;
+                    }
+                } else {
+                    tasks.push(savedTask);
+                }
+                
+                showNotification(
+                    taskId ? 'Tarea actualizada correctamente' : 'Tarea creada correctamente', 
+                    'success'
+                );
+                
+                // Actualizar UI
+                renderBoard();
+                renderProjects();
+                renderAssignees();
+                updateStats();
+                closeTaskModal();
+            } catch (error) {
+                console.error('Error al guardar la tarea:', error);
+                showNotification(`Error al guardar la tarea: ${error.message}`, 'error');
+            }
+            loadTasks();
+        }
+
+        // Funciones auxiliares
+        function getPriorityText(priority) {
+            switch (priority) {
+                case 'high': return 'Alta';
+                case 'medium': return 'Media';
+                case 'low': return 'Baja';
+                default: return priority;
+            }
+        }
+
+        // Funciones de notificación
+        function showNotification(message, type = 'info') {
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

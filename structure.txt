@@ -1,0 +1,9 @@
+kanban_app/
+├── __init__.py
+├── database.py          # Configuración de la base de datos
+├── models.py            # Modelos de datos
+├── cli.py               # Interfaz de línea de comandos
+├── web.py               # Servidor web y rutas
+├── kanban_board.html    # Interfaz web Kanban
+├── requirements.txt     # Dependencias
+└── README.md            # Documentación
