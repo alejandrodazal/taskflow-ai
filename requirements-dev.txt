@@ -1,0 +1,11 @@
+# Dependencias de producción
+Flask==2.2.5
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.4
+rich==13.9.4
+
+# Dependencias de desarrollo (opcional)
+pytest==8.4.1
+pytest-cov==6.2.1
+black==24.10.0
+flake8==7.1.1
