@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  taskflow-app:
+    build: .
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./kanban.db:/app/kanban.db
+    environment:
+      - PORT=5002
+    restart: unless-stopped
+
+  # Ejemplo de servicio de base de datos para futura migración
+  # postgres:
+  #   image: postgres:13
+  #   environment:
+  #     POSTGRES_DB: taskflow
+  #     POSTGRES_USER: taskflow
+  #     POSTGRES_PASSWORD: taskflow
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:

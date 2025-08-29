@@ -1,82 +1,115 @@
-# TaskFlow AI - Especificación Técnica del Proyecto
+# TaskFlow Kanban App - Especificación Técnica del Proyecto
 
 ## 1. Resumen Ejecutivo
 
-TaskFlow AI es una herramienta de gestión de proyectos para equipos, impulsada por IA. Funciona como una aplicación CLI tradicional y, adicionalmente, ofrece interfaces web interactivas que permiten la interacción por voz y la gestión visual de tareas mediante tableros Kanban.
+TaskFlow Kanban App es una herramienta de gestión de proyectos para equipos, basada en un tablero Kanban visual. Permite la organización de tareas mediante una interfaz web interactiva y una interfaz de línea de comandos, con almacenamiento local en base de datos SQLite.
 
 ## 2. Arquitectura del Sistema
 
 ### 2.1 Arquitectura General
-El sistema se compone de un backend en Python que contiene toda la lógica de negocio (gestión de tareas, IA) y tres interfaces de usuario:
+El sistema se compone de un backend en Python que contiene toda la lógica de negocio (gestión de tareas, proyectos y responsables) y dos interfaces de usuario:
 1.  Una CLI tradicional para comandos directos.
-2.  Una interfaz web conversacional con reconocimiento de voz.
-3.  Una interfaz web Kanban interactiva para gestión visual de tareas.
+2.  Una interfaz web para la gestión visual de tareas mediante tablero Kanban.
 
 ### 2.2 Arquitectura Web
 - **Backend:** Un servidor web ligero (Flask) que expone una API RESTful.
-- **Frontend Conversacional:** Una página HTML única (Single Page Application) con JavaScript que utiliza la Web Speech API del navegador para el reconocimiento de voz.
-- **Frontend Kanban:** Una página HTML interactiva con funcionalidad de arrastrar y soltar para gestionar tareas visualmente.
-- **Comunicación:** Los frontends envían comandos y solicitudes a la API del backend y muestran los resultados recibidos.
+- **Frontend:** Una página HTML única (Single Page Application) con JavaScript que permite la interacción visual con el tablero Kanban.
+- **Comunicación:** El frontend envía solicitudes a la API del backend y muestra los resultados recibidos.
+
+### 2.3 Arquitectura de Base de Datos
+- **Motor:** SQLite para almacenamiento local.
+- **Modelos:** Tres entidades principales (Projects, Assignees, Tasks) con relaciones adecuadas.
+- **Persistencia:** Datos almacenados en archivo local `kanban.db`.
 
 ## 3. Modelo de Datos y Módulos
 
-(Sin cambios en la estructura de la base de datos)
+### 3.1 Entidades
+- **Project:** Representa un proyecto con nombre y descripción.
+- **Assignee:** Representa un responsable con nombre y email.
+- **Task:** Representa una tarea con título, descripción, prioridad, estado y relaciones con Project y Assignee.
+
+### 3.2 Módulos
+- **Models:** Definición de entidades de datos.
+- **Database:** Configuración y conexión a la base de datos.
+- **Web:** Servidor Flask y rutas API.
+- **CLI:** Interfaz de línea de comandos con comandos para gestión de tareas.
 
 ## 4. Dependencias Clave
 
-Se añaden las siguientes dependencias para la interfaz web:
 ```
 Flask>=2.0.0
-Flask-Cors>=3.0.0
+Flask-SQLAlchemy>=3.0.0
+Flask-Migrate>=4.0.0
+rich>=13.0.0
 ```
 
 ## 5. Casos de Uso y Comandos
 
-### 5.1 Nuevos Comandos CLI
+### 5.1 Comandos CLI
 ```bash
-# Inicia la interfaz web conversacional del agente de IA
-taskflow web
+# Inicializar base de datos
+python -m kanban_app.run init
 
-# Inicia la interfaz web interactiva del tablero Kanban
-taskflow kanban
+# Crear proyecto
+python -m kanban_app.run create-project "Nombre" --description "Descripción"
+
+# Crear responsable
+python -m kanban_app.run create-assignee "Nombre" --email "email@example.com"
+
+# Crear tarea
+python -m kanban_app.run create-task "Título" --project "Proyecto" --assignee "Responsable" --priority high
+
+# Completar tarea
+python -m kanban_app.run complete-task ID
+
+# Listar proyectos/responsables/tareas
+python -m kanban_app.run list-projects
+python -m kanban_app.run list-assignees
+python -m kanban_app.run list-tasks
+
+# Mostrar tablero Kanban en consola
+python -m kanban_app.run kanban
 ```
 
-### 5.2 Flujo de Interacción Web Conversacional
-1. El usuario ejecuta `taskflow web`.
-2. Se abre una página en el navegador con un botón de micrófono.
-3. El usuario hace clic, habla un comando (ej. "muestra el progreso de ana").
-4. La interfaz muestra el texto reconocido y la respuesta del agente.
-
-### 5.3 Flujo de Interacción Web Kanban
-1. El usuario ejecuta `taskflow kanban` o abre directamente el archivo `kanban_board.html`.
-2. Se muestra un tablero Kanban con columnas para tareas pendientes, en progreso y completadas.
-3. El usuario puede arrastrar y soltar tareas entre columnas.
-4. El usuario puede crear, editar y eliminar tareas mediante formularios modales.
-5. Los datos se almacenan localmente en el navegador del usuario.
+### 5.2 Uso de la Interfaz Web
+1. Ejecutar `python -m kanban_app.run web`.
+2. Abrir navegador en `http://127.0.0.1:5002`.
+3. Crear, editar, mover y filtrar tareas visualmente.
 
 ## 6. Roadmap de Desarrollo
 
-### Fase 1: Gestión por Responsables (Completada)
-- [x] Modificado el esquema de la BD para incluir `assignee`.
-- [x] Actualizado `TaskManager` para soportar la asignación.
-- [x] Actualizada la UI (Kanban) para mostrar al responsable.
+### Fase 1: Base Funcional (Completada)
+- [x] Implementar modelo de datos con SQLite.
+- [x] Crear API RESTful para gestión de tareas.
+- [x] Desarrollar interfaz web Kanban interactiva.
+- [x] Implementar CLI para operaciones básicas.
+- [x] Añadir filtros por proyecto y responsable.
 
-### Fase 2: Análisis de Progreso (Completada)
-- [x] Implementado `get_progress_summary` en `TaskManager`.
-- [x] Añadida la acción `analyze_progress` en el CLI.
-- [x] Integrada la consulta de progreso con el agente de IA.
+### Fase 2: Mejoras Actuales (En progreso)
+- [x] Corrección de errores en actualización de tareas.
+- [x] Implementación de filtrado combinado.
+- [x] Mejora de la experiencia de usuario en web.
+- [ ] Optimización del rendimiento de la base de datos.
 
-### Fase 3: Agente Activo en Interfaz Web (Completada)
-- [x] Actualizar PRD con la nueva arquitectura web.
-- [x] Añadir dependencias (Flask, Flask-Cors).
-- [x] Crear el servidor web básico con Flask.
-- [x] Desarrollar la interfaz de usuario conversacional (HTML/CSS/JS).
-- [x] Implementar la lógica de reconocimiento de voz y comunicación con el backend.
-- [x] Añadir el comando `taskflow web` para iniciar el servidor.
+### Fase 3: Futuras Mejoras (Planeadas)
+- [ ] Integración con autenticación de usuarios.
+- [ ] Notificaciones y recordatorios.
+- [ ] Exportación de datos en formatos comunes.
+- [ ] Integración con reconocimiento de voz.
+- [ ] Despliegue en contenedores Docker.
+- [ ] API pública para integración con otras herramientas.
 
-### Fase 4: Interfaz Kanban Interactiva (Completada)
-- [x] Crear interfaz web Kanban independiente con funcionalidad de arrastrar y soltar.
-- [x] Implementar creación, edición y eliminación de tareas.
-- [x] Añadir almacenamiento local de datos en el navegador.
-- [x] Añadir el comando `taskflow kanban` para iniciar la interfaz.
-- [x] Crear archivo HTML independiente para uso sin servidor.
+## 7. Consideraciones para Despliegue
+
+### 7.1 Despliegue Local
+- Requiere Python 3.8+ y dependencias listadas en `requirements.txt`.
+- Base de datos SQLite almacenada localmente.
+
+### 7.2 Despliegue en Servidor (Futuro)
+- Compatible con despliegue en contenedores Docker.
+- Puede escalar a bases de datos más robustas (PostgreSQL, MySQL).
+- Arquitectura preparada para autenticación y múltiples usuarios.
+
+## 8. Licencia
+
+Este proyecto está bajo la licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
